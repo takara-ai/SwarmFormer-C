@@ -9,6 +9,7 @@
 typedef SOCKET socket_t;
 typedef int socklen_t;
 #define CLOSE_SOCKET(s) closesocket(s)
+#define STRDUP(s) _strdup(s)
 #else
 #include <unistd.h>
 #include <sys/socket.h>
@@ -18,6 +19,7 @@ typedef int socket_t;
 #define CLOSE_SOCKET(s) close(s)
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
+#define STRDUP(s) strdup(s)
 #endif
 
 #include "http_server.h"
@@ -48,7 +50,7 @@ static void parse_request(char* buffer, HttpRequest* req) {
     char* headers_end = find_header_end(buffer);
     if (!headers_end) return;
     
-    char* headers = strdup(buffer);
+    char* headers = STRDUP(buffer);
     headers[headers_end - buffer] = '\0';
     
     char* first_line = strtok(headers, "\r\n");
@@ -56,12 +58,12 @@ static void parse_request(char* buffer, HttpRequest* req) {
         char* space1 = strchr(first_line, ' ');
         if (space1) {
             *space1 = '\0';
-            req->method = strdup(first_line);
+            req->method = STRDUP(first_line);
             
             char* space2 = strchr(space1 + 1, ' ');
             if (space2) {
                 *space2 = '\0';
-                req->path = strdup(space1 + 1);
+                req->path = STRDUP(space1 + 1);
             }
         }
     }
@@ -73,7 +75,7 @@ static void parse_request(char* buffer, HttpRequest* req) {
         }
     }
     
-    req->body = strdup(headers_end + 4);
+    req->body = STRDUP(headers_end + 4);
     if (!req->content_length) {
         req->content_length = strlen(req->body);
     }
@@ -145,7 +147,7 @@ static void handle_status(ServerConfig* config, HttpResponse* resp) {
 static void handle_inference(ServerConfig* config, HttpRequest* req, HttpResponse* resp) {
     if (!req->body || req->content_length == 0) {
         resp->status_code = 400;
-        resp->body = strdup("{\"error\":\"No input text provided\"}");
+        resp->body = STRDUP("{\"error\":\"No input text provided\"}");
         resp->content_length = strlen(resp->body);
         return;
     }
@@ -159,7 +161,7 @@ static void handle_inference(ServerConfig* config, HttpRequest* req, HttpRespons
     int* tokens = tokenize_text(config->tokenizer, input_text, config->model->seq_len, &num_tokens);
     if (!tokens) {
         resp->status_code = 500;
-        resp->body = strdup("{\"error\":\"Failed to tokenize input\"}");
+        resp->body = STRDUP("{\"error\":\"Failed to tokenize input\"}");
         resp->content_length = strlen(resp->body);
         return;
     }
@@ -168,7 +170,7 @@ static void handle_inference(ServerConfig* config, HttpRequest* req, HttpRespons
     if (!output) {
         free(tokens);
         resp->status_code = 500;
-        resp->body = strdup("{\"error\":\"Memory allocation failed\"}");
+        resp->body = STRDUP("{\"error\":\"Memory allocation failed\"}");
         resp->content_length = strlen(resp->body);
         return;
     }
@@ -180,7 +182,7 @@ static void handle_inference(ServerConfig* config, HttpRequest* req, HttpRespons
         free(tokens);
         free(output);
         resp->status_code = 500;
-        resp->body = strdup("{\"error\":\"Memory allocation failed\"}");
+        resp->body = STRDUP("{\"error\":\"Memory allocation failed\"}");
         resp->content_length = strlen(resp->body);
         return;
     }
@@ -231,7 +233,14 @@ int start_server(ServerConfig* config) {
     struct sockaddr_in address;
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(config->host);
+    if (inet_pton(AF_INET, config->host, &address.sin_addr) != 1) {
+        perror("Invalid address");
+#ifdef _WIN32
+        CLOSE_SOCKET(server_fd);
+        WSACleanup();
+#endif
+        return 1;
+    }
     address.sin_port = htons(config->port);
     
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
@@ -285,12 +294,12 @@ int start_server(ServerConfig* config) {
                     handle_inference(config, &req, &resp);
                 } else {
                     resp.status_code = 400;
-                    resp.body = strdup("{\"error\":\"Invalid request\"}");
+                    resp.body = STRDUP("{\"error\":\"Invalid request\"}");
                     resp.content_length = strlen(resp.body);
                 }
             } else {
                 resp.status_code = 400;
-                resp.body = strdup("{\"error\":\"Malformed request\"}");
+                resp.body = STRDUP("{\"error\":\"Malformed request\"}");
                 resp.content_length = strlen(resp.body);
             }
             
