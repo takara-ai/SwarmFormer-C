@@ -10,10 +10,12 @@ if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /O2 /arch:AVX2 /fp:fast /GL /Gy /Oi /Ot /Qpar /Qvec-report:2")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(PLATFORM_LIBS ws2_32)
 else()
     set(MATH_LIB "m")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -mfma -ffast-math -ftree-vectorize -funroll-loops -fomit-frame-pointer -flto")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
+    set(PLATFORM_LIBS "")
 endif()
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -36,6 +38,8 @@ set(SOURCES
     src/utils/loader.c
     src/utils/tokenizer.c
     src/utils/profiler.c
+    src/utils/config.c
+    src/server/http_server.c
 )
 
 add_executable(swarmformer ${SOURCES})
@@ -43,7 +47,7 @@ add_executable(swarmformer ${SOURCES})
 target_include_directories(swarmformer PRIVATE src)
 
 if(WIN32)
-    target_link_libraries(swarmformer ${MATH_LIB} OpenMP::OpenMP_C)
+    target_link_libraries(swarmformer ${MATH_LIB} OpenMP::OpenMP_C ${PLATFORM_LIBS})
 else()
-    target_link_libraries(swarmformer ${MATH_LIB})
+    target_link_libraries(swarmformer ${MATH_LIB} ${PLATFORM_LIBS})
 endif() 
