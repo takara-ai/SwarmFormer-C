@@ -46,4 +46,4 @@ If you use this code in your research, please cite:
 For questions, collaborations, or other inquiries:
 
 - Email: research@takara.ai
-- Repository: https://github.com/takara-ai/SwarmFormer
+- Repository: [https://github.com/takara-ai/SwarmFormer](https://github.com/takara-ai/SwarmFormer-C)
