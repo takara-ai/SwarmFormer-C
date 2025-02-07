@@ -33,7 +33,7 @@ pip install -r requirements.txt
 ### 3.1. Convert the weights
 Both the model and the tokenizer has to be named the same.
 ```bash
-python convert_weights.py --pytorch_model "hf://takara-ai/SwarmFormer-Sentiment-Base" --output "model_weights.bin"
+python convert_weights.py --pytorch_model "hf://takara-ai/SwarmFormer-Sentiment-Base" --output "model_weights.vocab"
 ```
 
 ### 3.2. Convert the tokenizer
@@ -59,3 +59,7 @@ cmake --build .
 ```
 
 More examples can be found in the [usage.md](usage.md) file.
+
+## Notes
+1. Your model weights and vocab name need to be the same, for example: `model.vocab` and `model.bin`. It will try find the tokenizer automatically based off the name.
+2. This may not compile on Apple Silicon, requires more testing.
