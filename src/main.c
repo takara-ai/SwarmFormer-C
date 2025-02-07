@@ -5,7 +5,9 @@
 #include "utils/loader.h"
 #include "utils/tokenizer.h"
 #include "utils/profiler.h"
+#include "utils/config.h"
 #include "core/quantization.h"
+#include "server/http_server.h"
 
 bool verbose = false;
 bool benchmark = false;
@@ -75,9 +77,11 @@ void print_usage(const char* program_name) {
     printf("  %s [-v] [--quant MODE] <weights_file>                    # Run with example input\n", program_name);
     printf("  %s [-v] [--quant MODE] <weights_file> \"<input_text>\"     # Run inference on input text\n", program_name);
     printf("  %s --benchmark [--quant MODE] <weights_file>             # Run benchmark\n", program_name);
+    printf("  %s --server <config_file>                                # Run as inference server\n", program_name);
     printf("\nOptions:\n");
     printf("  -v           Enable verbose output with detailed tensor statistics\n");
     printf("  --benchmark  Run benchmark suite\n");
+    printf("  --server     Run as HTTP inference server\n");
     printf("  --quant MODE Quantization mode (float32, int8, int4)\n");
 }
 
@@ -219,6 +223,8 @@ void run_benchmark(const char* weights_path) {
 
 int main(int argc, char** argv) {
     int arg_idx = 1;
+    bool server_mode = false;
+    const char* config_path = NULL;
     
     while (arg_idx < argc && argv[arg_idx][0] == '-') {
         if (strcmp(argv[arg_idx], "-v") == 0) {
@@ -227,6 +233,15 @@ int main(int argc, char** argv) {
         } else if (strcmp(argv[arg_idx], "--benchmark") == 0) {
             benchmark = true;
             arg_idx++;
+        } else if (strcmp(argv[arg_idx], "--server") == 0) {
+            if (arg_idx + 1 >= argc) {
+                printf("Error: --server requires a config file\n");
+                print_usage(argv[0]);
+                return 1;
+            }
+            server_mode = true;
+            config_path = argv[arg_idx + 1];
+            arg_idx += 2;
         } else if (strcmp(argv[arg_idx], "--quant") == 0) {
             if (arg_idx + 1 >= argc) {
                 printf("Error: --quant requires a mode argument\n");
@@ -240,6 +255,49 @@ int main(int argc, char** argv) {
             print_usage(argv[0]);
             return 1;
         }
+    }
+    
+    if (server_mode) {
+        Config* config = load_config(config_path);
+        if (!config) {
+            return 1;
+        }
+        
+        printf("Loading model from: %s\n", config->weights_path);
+        SwarmFormerModel* model = load_swarmformer_model(config->weights_path);
+        if (!model) {
+            printf("Failed to load model\n");
+            free_config(config);
+            return 1;
+        }
+        
+        char vocab_path[1024];
+        snprintf(vocab_path, sizeof(vocab_path), "%.*s.vocab", 
+                 (int)(strrchr(config->weights_path, '.') - config->weights_path), 
+                 config->weights_path);
+        
+        printf("Loading tokenizer from: %s\n", vocab_path);
+        Tokenizer* tokenizer = load_tokenizer(vocab_path);
+        if (!tokenizer) {
+            printf("Failed to load tokenizer\n");
+            free_swarmformer_model(model);
+            free_config(config);
+            return 1;
+        }
+        
+        ServerConfig server_config = {
+            .host = config->host,
+            .port = config->port,
+            .model = model,
+            .tokenizer = tokenizer
+        };
+        
+        int result = start_server(&server_config);
+        
+        free_tokenizer(tokenizer);
+        free_swarmformer_model(model);
+        free_config(config);
+        return result;
     }
     
     if (arg_idx >= argc || (!benchmark && arg_idx + 2 < argc)) {

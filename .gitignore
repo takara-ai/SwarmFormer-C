@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+model.bin
+model.json
+model.vocab
+
+build/*
