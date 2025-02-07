@@ -16,3 +16,9 @@ Verbose mode will print the output of each layer, and a breakdown of the time ta
 ```bash
 ./swarmformer  --benchmark "model_weights.bin"
 ```
+
+### Server Mode
+
+```bash
+./swarmformer.exe --server server_config.txt
+```

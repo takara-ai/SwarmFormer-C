@@ -18,21 +18,16 @@ SwarmFormer.c is a C implementation of the SwarmFormer architecture.
 
 ## Setup
 
-See [setup.md](setup.md) for more information.
+The following guide is for building the inference engine from source. See [setup.md](setup.md) for more information.
 
 ## Usage
-
-See [usage.md](usage.md) for more information.
-
-## Benchmarks
-
-See [benchmarks.md](benchmarks.md) for more information.
+For a guide on how to use the inference engine, see [usage.md](usage.md)
 
 ## Citing
 
 If you use this code in your research, please cite:
 
-```
+```bibtex
 @article{legg2025swarmformer,
   title={SwarmFormer: Local-Global Hierarchical Attention via Swarming Token Representations},
   author={Legg, Jordan and Sturmanis, Mikus and {Takara.ai}},
