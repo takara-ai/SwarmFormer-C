@@ -20,7 +20,7 @@ Similar to llama.cpp, this features a C interface for the SwarmFormer architectu
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/takara-ai/SwarmFormer.c.git
+git clone https://github.com/takara-ai/SwarmFormer-C.git
 cd SwarmFormer.c
 ```
 
