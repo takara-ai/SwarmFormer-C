@@ -51,18 +51,27 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: ctest --build-config ${{ matrix.build_type }}
 
-    - name: Create Release
+    - name: Create Tag
+      id: create_tag
       if: github.ref == 'refs/heads/main'
+      shell: pwsh  # Use PowerShell on Windows
       run: |
-        commit_number=$(git rev-parse --short HEAD)
-        tag_name="commit_${commit_number}"
+        $commit_number = git rev-parse --short HEAD
+        $tag_name = "dev-$commit_number"
+        git config user.name github-actions
+        git config user.email github-actions@github.com
         git tag $tag_name
         git push origin $tag_name
+        echo "tag_name=$tag_name" >> $env:GITHUB_ENV  # Set tag_name as an environment variable
+
+    - name: List Files in Build Directory
+      run: dir ${{ steps.strings.outputs.build-output-dir }}  # List files on Windows to debug
 
     - name: Publish Release
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
-        files: ${{ steps.strings.outputs.build-output-dir }}/*
+        files: ${{ steps.strings.outputs.build-output-dir }}/*  # Make sure files are in the directory
+        tag_name: ${{ env.tag_name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
