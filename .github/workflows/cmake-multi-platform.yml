@@ -1,14 +1,13 @@
-name: Bleeding Edge Build
-
+name: CMake on multiple platforms
 on:
   push:
-    branches:
-      - '*'
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +35,6 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-        echo "short-sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
       run: >
@@ -54,34 +52,17 @@ jobs:
       run: ctest --build-config ${{ matrix.build_type }}
 
     - name: Create Release
-      if: success() && matrix.os == 'ubuntu-latest'
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: bleeding_commit_${{ steps.strings.outputs.short-sha }}
-        release_name: Bleeding Commit ${{ steps.strings.outputs.short-sha }}
-        draft: false
-        prerelease: true
+      if: github.ref == 'refs/heads/main'
+      run: |
+        commit_number=$(git rev-parse --short HEAD)
+        tag_name="commit_${commit_number}"
+        git tag $tag_name
+        git push origin $tag_name
 
-    - name: Upload Release Asset (Ubuntu)
-      if: success() && matrix.os == 'ubuntu-latest'
-      uses: actions/upload-release-asset@v1
+    - name: Publish Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.strings.outputs.build-output-dir }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.strings.outputs.build-output-dir }}/your_binary_name
-        asset_name: your_binary_name-ubuntu-${{ steps.strings.outputs.short-sha }}
-        asset_content_type: application/octet-stream
-
-    - name: Upload Release Asset (Windows)
-      if: success() && matrix.os == 'windows-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.strings.outputs.build-output-dir }}\Release\swarmformer.exe
-        asset_name: your_binary_name-windows-${{ steps.strings.outputs.
