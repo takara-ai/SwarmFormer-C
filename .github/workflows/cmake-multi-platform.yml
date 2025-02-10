@@ -51,6 +51,15 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: ctest --build-config ${{ matrix.build_type }}
 
+    - name: List Build Directory
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          ls -l "${{ steps.strings.outputs.build-output-dir }}"
+        else
+          ls -l ${{ steps.strings.outputs.build-output-dir }}
+        fi
+      shell: bash
+
     - name: Create Tag
       id: create_tag
       if: github.ref == 'refs/heads/main'
@@ -64,14 +73,30 @@ jobs:
         git push origin $tag_name
         echo "tag_name=$tag_name" >> $env:GITHUB_ENV  # Set tag_name as an environment variable
 
-    - name: List Files in Build Directory
-      run: dir ${{ steps.strings.outputs.build-output-dir }}  # List files on Windows to debug
+    - name: List Release Directory
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          if [ -d "${{ steps.strings.outputs.build-output-dir }}\${{ matrix.build_type }}" ]; then
+            ls -l "${{ steps.strings.outputs.build-output-dir }}\${{ matrix.build_type }}"
+          else
+            echo "${{ matrix.build_type }} directory not found!"
+          fi
+        else
+          if [ -d "${{ steps.strings.outputs.build-output-dir }}/${{ matrix.build_type }}" ]; then
+            ls -l "${{ steps.strings.outputs.build-output-dir }}/${{ matrix.build_type }}"
+          else
+            echo "${{ matrix.build_type }} directory not found!"
+          fi
+        fi
+      shell: bash
 
     - name: Publish Release
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
-        files: ${{ steps.strings.outputs.build-output-dir }}/*  # Make sure files are in the directory
+        files: |
+          ${{ steps.strings.outputs.build-output-dir }}\${{ matrix.build_type }}\swarmformer.exe
+          ${{ steps.strings.outputs.build-output-dir }}/swarmformer
         tag_name: ${{ env.tag_name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
