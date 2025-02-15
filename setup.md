@@ -33,7 +33,7 @@ pip install -r requirements.txt
 ### 3.1. Convert the weights
 Both the model and the tokenizer has to be named the same.
 ```bash
-python convert_weights.py --pytorch_model "hf://takara-ai/SwarmFormer-Sentiment-Base" --output "model_weights.vocab"
+python convert_weights.py --pytorch_model "hf://takara-ai/SwarmFormer-Sentiment-Base" --output "model_weights.bin"
 ```
 
 ### 3.2. Convert the tokenizer
