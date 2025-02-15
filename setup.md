@@ -21,7 +21,7 @@ Similar to llama.cpp, this features a C interface for the SwarmFormer architectu
 
 ```bash
 git clone https://github.com/takara-ai/SwarmFormer-C.git
-cd SwarmFormer.c
+cd SwarmFormer-C
 ```
 
 ### 2. Install the dependencies
@@ -39,7 +39,7 @@ python convert_weights.py --pytorch_model "hf://takara-ai/SwarmFormer-Sentiment-
 ### 3.2. Convert the tokenizer
 
 ```bash
-python convert_tokenizer.py --output "model_weights"
+python convert_tokenizer.py --output "model_weights.vocab"
 ```
 
 ### 4. Build the C library
